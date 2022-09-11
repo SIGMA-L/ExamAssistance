@@ -1,0 +1,14 @@
+#ExamAssistancePlugin
+
+Setting:
+  CategoryId: 000000000000
+  Message:
+    ExamStart:
+      color: 'GREEN'
+      title: 'ようこそ'
+      description: 'これは自動送信メッセージです。'
+      image: 'https://crafatar.com/avatars/%uuid%'
+      timestamp: true
+      message:
+        - 'ようこそ'
+        - 'これはデフォルトメッセージです。'

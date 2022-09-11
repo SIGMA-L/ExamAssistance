@@ -1,0 +1,6 @@
+name: ExamAssistance
+version: '${project.version}'
+main: org.mcjp.dev.examassistance.ExamAssistance
+api-version: 1.13
+depend:
+  - PlayerRoleChecker
