@@ -1,12 +1,18 @@
 package org.mcjp.dev.examassistance.event;
 
+import net.klnetwork.playerrolechecker.api.PlayerRoleCheckerAPI;
 import net.klnetwork.playerrolechecker.api.enums.JoinEventType;
 import net.klnetwork.playerrolechecker.api.event.connector.JoinEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.mcjp.dev.examassistance.util.DiscordUtil;
+import org.mcjp.dev.examassistance.util.OtherUtil;
+
+
+import javax.print.attribute.standard.MediaSize;
 
 import static org.mcjp.dev.examassistance.ExamAssistance.jda;
+import static org.mcjp.dev.examassistance.ExamAssistance.plugin;
 
 public class RegisterEvent implements Listener {
 
@@ -19,9 +25,23 @@ public class RegisterEvent implements Listener {
             String uuid = null;
             String discordId = null;
 
-            jda.getTextChannelById(id).sendMessage(DiscordUtil.createEmbedMessage("Custom.ExamAssistance.Message.ExamStart",uuid,discordId,false));
+            uuid = PlayerRoleCheckerAPI.getCheckerAPI().getPlayerData().getUUID(e.getMemberId()).toString();
+            discordId = e.getMemberId();
 
-             
+
+            try  {
+                if (!plugin.getConfig().getBoolean("Discord.ChangeNickName")) return;
+
+                e.getMember().modifyNickname(OtherUtil.getName(uuid));
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+
+            try {
+                DiscordUtil.createChannel(OtherUtil.getName(uuid), e.getMember());
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
 
         }
     }

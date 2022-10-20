@@ -1,18 +1,12 @@
 package org.mcjp.dev.examassistance.util;
 
-import jdk.tools.jlink.resources.plugins;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
-import net.klnetwork.playerrolechecker.api.PlayerRoleCheckerAPI;
 import net.klnetwork.playerrolechecker.api.utils.CommonUtils;
-import org.bukkit.Bukkit;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,7 +27,7 @@ public class DiscordUtil {
         long channelId = 0;
 
 
-        jda.getCategoryById(plugin.getConfig().getLong("Custom.ExamAssistance.CategoryId"))
+        jda.getCategoryById(plugin.getConfig().getLong("Setting.CategoryId"))
                 .createTextChannel(name)
                 .setTopic(code)
                 .addMemberPermissionOverride(userid, allow, deny)
@@ -75,18 +69,6 @@ public class DiscordUtil {
         return target;
     }
 
-    public static EmbedBuilder splitBuilder(EmbedBuilder embedBuilder, String configPath, String uuid, String discordId) {
-        for (String c : plugin.getConfig().getStringList(configPath)) {
-            String[] strings = addString(c, uuid, discordId).split("\\|", 3);
-
-            if (strings.length != 3) {
-                throw new IllegalStateException("Illegal format=" + Arrays.toString(strings));
-            }
-            embedBuilder.addField(strings[0], strings[1], Boolean.parseBoolean(strings[2]));
-        }
-        return embedBuilder;
-    }
-
     private static MessageEmbed createEmbedMessage(String path, String uuid, String discordId) {
         EmbedBuilder builder = new EmbedBuilder()
                 .setColor(CommonUtils.getColor(plugin.getConfig().getString(path + ".color")))
@@ -95,10 +77,67 @@ public class DiscordUtil {
                 .setThumbnail(addString(plugin.getConfig().getString(path + ".image"), uuid, discordId))
                 .setTimestamp(plugin.getConfig().getBoolean(path + ".timestamp") ? OffsetDateTime.now() : null);
 
-        return (splitBuilder(builder, path + ".message", uuid,discordId)).build();
+        return (splitBuilder(builder, path + ".message", uuid, discordId)).build();
     }
 
     public static MessageCreateData createEmbedMessage(String path, String uuid, String discordId, boolean bedrock) {
-        return createEmbedMessage("Setting.Message.ExamStart",uuid, discordId,false);
+        return createEmbedMessage("Setting.Message.ExamStart", uuid, discordId, false);
     }
+
+    public static EmbedBuilder TicketembedBuilder(String configPath, OffsetDateTime offsetDateTime, String uuid, String discordID, Member member) {
+        EmbedBuilder ticketembedBuilder = (new EmbedBuilder()).setColor(OtherUtil.ColorFromString(plugin.getConfig().getString(configPath + ".color"))).setTitle(replaceString(plugin.getConfig().getString(configPath + ".title"), uuid, discordID)).setDescription(replaceString(plugin.getConfig().getString(configPath + ".description"), uuid, discordID)).setThumbnail(member.getAvatarUrl()).setTimestamp(plugin.getConfig().getBoolean(configPath + ".timestamp") ? offsetDateTime : null);
+        return ticketembedBuilder;
+    }
+
+    public static EmbedBuilder splitBuilder(EmbedBuilder embedBuilder, String configPath, String uuid, String discordID) {
+        plugin.getConfig().getStringList(configPath).forEach(i -> {
+            i = replaceString(i, uuid, discordID);
+            String[] split = i.split("\\|");
+            embedBuilder.addField(split[0], split[1], Boolean.parseBoolean(split[2]));
+        });
+        return embedBuilder;
+    }
+
+    public static String replaceString(String string, String uuid, String discordID) {
+        if (string != null) {
+            if (uuid != null)
+                string = string.replaceAll("%uuid%", uuid);
+            if (discordID != null)
+                string = string.replaceAll("%discordid%", discordID);
+        }
+        return string;
+    }
+
+    public static void removeNickName(Member member) {
+        if (!plugin.getConfig().getBoolean("Discord.ChangeNickName"))
+            return;
+        if (member != null)
+            return;
+        member.modifyNickname("");
+    }
+
+    public static void createTicketChannel(Guild guild, Member member, String name) {
+        if (!plugin.getConfig().getBoolean("Discord.CreateTicketChannel"))
+            return;
+        Category category = guild.getCategoryById(plugin.getConfig().getLong("Discord.ChannelCategory"));
+        Role everyoneRole = guild.getPublicRole();
+        Role judgeRole = guild.getRoleById(plugin.getConfig().getInt("Setting.JudgeRoleId"));
+        Role adviserRole = guild.getRoleById(plugin.getConfig().getInt("Setting.AdviserRoleId"));
+        long everyone = everyoneRole.getIdLong();
+        long judge = judgeRole.getIdLong();
+        long adviser = adviserRole.getIdLong();
+        long all = Permission.ALL_CHANNEL_PERMISSIONS;
+        long allow = Permission.MESSAGE_HISTORY.getRawValue() | Permission.MESSAGE_SEND.getRawValue() | Permission.VIEW_CHANNEL.getRawValue() | Permission.MESSAGE_ATTACH_FILES.getRawValue();
+        long non = 0L;
+        guild.createTextChannel(name, category)
+                .addPermissionOverride((IPermissionHolder) member, allow, non)
+                .addRolePermissionOverride(everyone, non, all)
+                .addRolePermissionOverride(adviser, all, non)
+                .addRolePermissionOverride(judge, all, non)
+                .queue(channel -> {
+                    String msg = plugin.getConfig().getString("sendMessage.message");
+                    channel.sendMessage("<@" + member.getId() + ">\n" + msg).queue();
+                });
+    }
+
 }

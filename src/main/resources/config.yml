@@ -2,6 +2,8 @@
 
 Setting:
   CategoryId: 000000000000
+  AdviserRoleId: 000000000000
+  JudgeRoleId: 0000000000
   Message:
     ExamStart:
       color: 'GREEN'
@@ -12,3 +14,12 @@ Setting:
       message:
         - 'ようこそ'
         - 'これはデフォルトメッセージです。'
+
+Discord:
+  CreateTicketChannel: false
+  ChannelCategory: 0000000000
+  ChangeNickName: false
+
+SendMessage:
+    message:
+
